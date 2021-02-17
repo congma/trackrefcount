@@ -1,8 +1,11 @@
 class _singleton(type):
     __inst = {}
     def __call__(cls, *args, **kwargs):
-        return cls.__inst.setdefault(cls, super(_singleton,
-                                                cls).__call__(*args, **kwargs))
+        if cls in cls.__inst:
+            return cls.__inst[cls]
+        i = super(_singleton, cls).__call__(*args, **kwargs)
+        cls.__inst[cls] = i
+        return i
 
 
 class __FakeNumMixin:
