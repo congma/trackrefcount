@@ -20,14 +20,18 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Setup Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
       run: |
-        python${{ matrix.python-version }} -m pip install --upgrade pip
-        python${{ matrix.python-version }} -m pip install --upgrade setuptools pytest
+        python -m pip install --upgrade pip
+        pip install --upgrade setuptools pytest
 
     - name: Install project with pip
-      run: python${{ matrix.python-version }} -m pip install .
+      run: pip install .
 
     - name: Execute pytest
-      run: python${{ matrix.python-version }} -m pytest
+      run: pytest
