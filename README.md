@@ -1,6 +1,8 @@
 <!--
 vim: spell spelllang=en
 -->
+[![GitHub CI](https://github.com/congma/trackrefcount/actions/workflows/main.yml/badge.svg)](https://github.com/congma/trackrefcount/actions/workflows/main.yml)
+
 SYNOPSIS
 ========
 
@@ -44,7 +46,7 @@ explicitly, an `AssertionError` will be raised.
 RATIONALE
 =========
 
-This simple helper class wraps around Python's `sys.getrefcount` function so
+This simple helper class wraps around Python's `sys.getrefcount()` function so
 that unit tests can becomes more readable. It is very far from a full-fledged
 memory tracer (think: Valgrind), and it cannot detect refcount problems with
 *inaccessible* objects kept alive because of incorrect refcounting. It is
@@ -112,6 +114,28 @@ f.assertEqualRC()
 ```
 
 Duplication means creating a new instance that tracks the same objects.
+
+
+Entering in `setUp`, exiting in `tearDown`
+------------------------------------------
+
+This may be useful when it's desirable to wrap each single test in a context
+manager, and the values asserted after exit is the same (typically zero). The
+entering and exiting can be put manually into the `setUp` and `tearDown`
+special methods recognized by `unittest`:
+
+```python
+class TestSomething(unittest.TestCase):
+    def setUp(self):
+        < ... do something ... >
+	self.rc_context = TrackRCFor(< some args >)
+	self.rc_context.__enter__()
+
+    def tearDown(self):
+        < ... do something ... >
+	self.rc_context.__exit__(*sys.exc_info())
+	self.rc_context.assertDelta(< some values >)
+```
 
 
 Matching inexact numbers
@@ -217,7 +241,7 @@ The following is a simplified sequence of what's happening:
    decrease of the refcount). This makes `f` record the Python `int` "15" (i.e.
    the blob) as the initial value it receives from `sys.getrefcount()` at the
    time of `__enter__()`ing.
-4. The empty body (`pass`) is executed, followed by the context manager's
+4. The no-op body (`pass`) is executed, followed by the context manager's
    `__exit__()`. Inside `__exit__()`, another call to `sys.getrefcount()` is
    made. This time, just as before, the built-in function does its job: it sees
    the number 16 as the current refcount to the blob, and returns a new
