@@ -24,7 +24,7 @@ jobs:
     - name: Install dependencies
       run: |
         python${{ matrix.python-version }} -m pip install --upgrade pip
-        python${{ matrix.python-version }} -m pip install --upgrade setuptools, pytest
+        python${{ matrix.python-version }} -m pip install --upgrade setuptools pytest
 
     - name: Install project with pip
       run: python${{ matrix.python-version }} -m pip install .
