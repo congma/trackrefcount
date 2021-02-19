@@ -1,15 +1,16 @@
 from sys import getrefcount
-from typing import Sequence, List, ContextManager
+from operator import sub
+from typing import Sequence, Tuple, ContextManager
 from contextlib import AbstractContextManager
 
 
-def rc(args: Sequence) -> List[int]:
+def rc(args: Sequence) -> Tuple[int]:
     """Return a list of reference counts reported by sys.getrefcount for each
     element in args.
     """
-    # Using list comprehension will add the value by one due to intermediate
-    # variable (unless explicitly suppressed). This doesn't matter -- just FYI.
-    return list(map(getrefcount, args))
+    # Using list comprehension will add the value by one due to loop variable
+    # (unless explicitly suppressed). This doesn't matter -- just FYI.
+    return tuple(map(getrefcount, args))
 
 
 class TrackRCFor(AbstractContextManager):
@@ -38,6 +39,8 @@ class TrackRCFor(AbstractContextManager):
     extension code has much greater leeway and may introduce refcount-breaking
     bugs.
     """
+    __slots__ = ("args", "c_initial", "c_final")
+
     def __init__(self, *args) -> None:
         """Initialize a context manager that can be entered later by specifying
         which variables/names to track as arguments to the call. The arguments
@@ -45,10 +48,8 @@ class TrackRCFor(AbstractContextManager):
         the context manager.
         """
         self.args = args
-        self.n = len(args)
         self.c_initial = None
         self.c_final = None
-        self.exited = False
 
     def __call__(self) -> ContextManager:
         """Called with no arguments: return a duplicate of self.
@@ -96,7 +97,6 @@ class TrackRCFor(AbstractContextManager):
         """
         self.c_final = rc(self.args)
         del self.args  # Make it nicer to work with nested contexts.
-        self.exited = True
         return False
 
     def assertDelta(self, *assumptions) -> None:
@@ -114,15 +114,20 @@ class TrackRCFor(AbstractContextManager):
         The assertion is made as a normal Python "assert" statement. Normally a
         false assertion will raise AssertionError.
         """
-        if not self.exited:
-            raise TypeError("Context has not finalized")
-        deltas = [a - b for a, b in zip(self.c_final, self.c_initial)]
-        if len(assumptions) == 1:
-            assumed = [assumptions[0]] * self.n
+        try:
+            self.args
+        except AttributeError:
+            pass
         else:
-            assumed = list(assumptions)
-        if len(assumed) != len(deltas):
-            raise ValueError("Length of argument-lists mismatch")
+            raise TypeError("Context has not finalized")
+        deltas = tuple(map(sub, self.c_final, self.c_initial))
+        n = len(deltas)
+        if len(assumptions) == 1:
+            assumed = (assumptions[0],) * n
+        else:
+            assumed = assumptions
+        if len(assumed) != n:
+            raise ValueError("Length of argument-list mismatch")
         assert deltas == assumed, ("Measured: %r != Asserted: %r" %
                                    (deltas, assumed))
 

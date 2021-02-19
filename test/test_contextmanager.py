@@ -170,7 +170,7 @@ class TestRefCountTracker(TestCase):
         with TrackRCFor(a, b) as t:
             pass
         with self.assertRaisesRegex(ValueError,
-                                    "Length of argument-lists mismatch"):
+                                    "[lL]ength.+mismatch"):
             t.assertDelta(0, 0, 0)
 
     def test_separation_of_init_and_enter(self):
