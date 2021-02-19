@@ -1,0 +1,30 @@
+name: GitHub CI
+
+
+on:
+  push:
+    branches: [ devel ]
+  pull_request:
+    branches: [ devel ]
+
+  workflow_dispatch:
+
+
+jobs:
+  build-and-test-with-pythons-on-focal:
+    name: Build and Test on Ubuntu
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: python${{ matrix.python-version }} -m pip install --upgrade pip pytest
+    - name: Install project with pip
+      run: python${{ matrix.python-version }} -m pip install .
+
+    - name: Execute pytest
+      run: python${{ matrix.python-version }} -m pytest
