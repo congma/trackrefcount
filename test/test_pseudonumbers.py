@@ -108,6 +108,7 @@ class TestStrictEquality:
         assert thing != -thing
         assert -thing != thing
 
+
 @pytest.mark.parametrize("thing, thing_repr",
                          ((Pos, "Pos"), (Neg, "Neg"),
                           (NonPos, "NonPos"), (NonNeg, "NonNeg"),
@@ -115,3 +116,9 @@ class TestStrictEquality:
 class TestRepr:
     def test_repr(self, thing, thing_repr):
         assert ("%r" % thing) == thing_repr
+
+
+@pytest.mark.parametrize("thing", (Pos, Neg, NonPos, NonNeg, Anything))
+def test_unhashable(thing):
+    with pytest.raises(TypeError):
+        hash(thing)
